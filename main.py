@@ -3,6 +3,8 @@ import pickle
 from argparse import ArgumentParser
 from collections import Counter, defaultdict
 
+import streamlit as st
+
 
 class TrieNode:
     def __init__(self):
@@ -82,22 +84,32 @@ def calculate_score(word, all_letters):
     return score, most_common_letter
 
 def main(trie: Trie):
-    arguments = argument_parser()
-    all_letters = [arguments.center.lower()] + [o.lower() for o in arguments.others]
-    words_and_scores = defaultdict(list)
-    for word in trie.get_words_with_letters(all_letters):
-        if len(word) < 4:
-            continue
-        else:
-            score, most_common_letter = calculate_score(word, all_letters)
-            words_and_scores[most_common_letter].append((score, word))
+    st.set_page_config(page_title='Blossom Word Finder', page_icon='🔠', layout="wide")
+    st.title('Blossom Word Finder')
+    center = st.text_input('Center Letter')
+    st.text('Enter the other letters, separated by spaces:')
+    others = st.text_input('Other Letters', value='', placeholder='E.g. a b c d e f g')
     
-    for most_common_letter, words in words_and_scores.items():
-        words.sort(reverse=True)
-        print(f"Words with '{most_common_letter}' used most frequently:")
-        for score, word in words[:5]:
-            print(f"{word}: {score}")
-        print()
+    if st.button('Calculate Scores'):
+        if center and others:
+            all_letters = [center.lower()] + [o.lower() for o in others.split()]
+            words_and_scores = defaultdict(list)
+            for word in trie.get_words_with_letters(all_letters):
+                if len(word) < 4:
+                    continue
+                else:
+                    score, most_common_letter = calculate_score(word, all_letters)
+                    words_and_scores[most_common_letter].append((score, word))
+            
+            cols = st.columns(len(words_and_scores))
+            for col, (most_common_letter, words) in zip(cols, words_and_scores.items()):
+                words.sort(reverse=True)
+                col.subheader(f"Max scoring words with '{most_common_letter.upper()}'")
+                for score, word in words[:5]:
+                    col.text(f"{word}: {score}")
+        else:
+            st.error('Please enter both center and other letters.')
+
 
 
 if __name__ == "__main__":
